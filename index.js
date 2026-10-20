@@ -1,77 +1,78 @@
 // index.js
 const weatherApi = "https://api.weather.gov/alerts/active?area="
+const BASE_URL = "https://api.weather.gov/alerts/active?area="
 
 // Your code here!
+const input = document.getElementById("state-input");
+const button = document.getElementById("fetch-alerts");
+const alertsContainer = document.getElementById("alerts-display");
+const errorDiv = document.getElementById("error-message");
 
-const stateInput = document.getElementById("stateInput");
-const fetchButton = document.getElementById("fetch-alerts");
-const alertsDisplay = document.getElementById("alerts-display");
-const errorMessage = document.getElementById("error-message");
+// Fetch function
+async function fetchWeatherAlerts(state) {
+    try {
+        // Validate input
+        if (!state || state.length !== 2) {
+            throw new Error("Please enter a valid 2-letter state code.");
+        }
 
-// Step1: Get to fetch alerts from the states
+        const response = await fetch(BASE_URL + state.toUpperCase());
 
- function fetchWeatherAlerts(state) {
-    return fetch(`https://api.weather.gov/alerts/active?area=${state}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Request failed with status ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log(data);
-            displayAlerts(data);
-            hideError();
-        })
-        .catch(errorObject => {
-            console.log(errorObject.message);
-            displayError("Failed to fetch weather alerts.");
-        });
+        if (!response.ok) {
+            throw new Error("Failed to fetch weather alerts.");
+        }
+
+        const data = await response.json();
+        console.log(data);
+
+        // Display alerts
+        displayAlerts(data);
+
+        // Clear input
+        input.value = "";
+
+        // Hide error
+        errorDiv.classList.add("hidden");
+        errorDiv.textContent = "";
+
+    } catch (error) {
+        console.log(error.message);
+
+        // Show error
+        errorDiv.classList.remove("hidden");
+        errorDiv.textContent = error.message;
+
+        // Clear alerts
+        alertsContainer.innerHTML = "";
+    }
 }
-fetchWeatherAlerts("MN");
 
-// Step 2 to display the Alerts on the page.
-
+// Display function
 function displayAlerts(data) {
-    const alertsDisplay = document.getElementById("alerts-display");
-    alertsDisplay.innerHTML = ``;
+    // Clear previous alerts
+    alertsContainer.innerHTML = "";
 
-    const summary = document.createElement(`p`);
-    summary.textContent = `${data.title}: ${data.features.length}`;
-    alertsDisplay.appendChild(summary);
+    const alerts = data.features;
 
-    const list = document.createElement(`ul`);
-    data.features.forEach(alert => {
-        const item = document.createElement(`li`);
-        item.textContent = alert.properties.headline;
-        list.appendChild(item);
+    // EXACT text expected by test
+    const summary = document.createElement("h3");
+    summary.textContent = `Weather Alerts: ${alerts.length}`;
+    alertsContainer.appendChild(summary);
+
+    // List of alerts
+    const list = document.createElement("ul");
+
+    alerts.forEach(alert => {
+        const li = document.createElement("li");
+        li.textContent = alert.properties.headline;
+        list.appendChild(li);
     });
-    alertsDisplay.appendChild(list);
+
+    alertsContainer.appendChild(list);
 }
 
-// step 3 get to clear and reset the UI
-
-function handleFetch() {
-    const state = stateInput.value.trim().toUpperCase();
-    stateInput.value = ``;
-    alertsDisplay.innerHTML = ``;
-
+// Event listener
+button.addEventListener("click", () => {
+    const state = input.value.trim();
     fetchWeatherAlerts(state);
-
-}
-
-// Step 4: Handle errors and display error messages
-
-function displayError(message) {
-    errorMessage.textContent = message;
-    errorMessage.classList.remove(`hidden`);;
-}
-function hideError() {
-    errorMessage.textContent = ``;
-    errorMessage.classList.add(`hidden`);
-}
-
-fetchButton.addEventListener(`click`, handleFetch);
-stateInput.addEventListener(`keydown`, event => {
-    if (event.key === `Enter`) handleFetch();
 });
